@@ -41,6 +41,13 @@ This project implements an AI-driven system for SOX (Sarbanes-Oxley) compliance 
 - **Format**: JSON, CSV, Parquet
 - **Use Cases**: Identity management analysis, privilege escalation detection
 
+#### 6. **AWS IAM Policy Testing Framework**
+- **Source**: Amazon Web Services Documentation
+- **URL**: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_testing-policies.html
+- **Description**: Framework for testing and simulating IAM policies and access patterns
+- **Features**: Policy evaluation logic, access decision simulation, permission testing
+- **Use Case**: IAM policy validation, access control testing, compliance verification
+
 ## 🏗️ Project Structure
 
 https://www.kaggle.com/datasets/ravindrasinghrana/employeedataset
