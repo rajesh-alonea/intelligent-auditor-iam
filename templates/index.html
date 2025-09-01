@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IAM SOX Compliance Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: #f8fafc;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+                .chat-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 100vh;
+            margin: 0 auto;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            border-radius: 0;
+        }
+
+        .chat-container:hover {
+            box-shadow: 
+                0 25px 50px rgba(0,0,0,0.15),
+                0 0 0 1px rgba(255,255,255,0.3);
+        }
+
+                .chat-header {
+            background: #ffffff;
+            color: #2d3748;
+            padding: 20px 30px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .chat-header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .chat-header p {
+            margin: 5px 0 0 0;
+            color: #4a5568;
+            font-size: 0.95em;
+            font-weight: 400;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.8);
+            animation: pulse 2s infinite;
+            z-index: 2;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+            position: relative;
+        }
+
+        .chat-messages::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(to bottom, rgba(248,249,250,1), rgba(248,249,250,0));
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            text-align: right;
+        }
+
+        .user-message .message-content {
+            background: #667eea;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px 12px 4px 12px;
+            display: inline-block;
+            max-width: 75%;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            position: relative;
+            font-weight: 400;
+        }
+
+        .user-message .message-content::before {
+            display: none;
+        }
+
+        .assistant-message .message-content {
+            background: #f8f9fa;
+            color: #2d3748;
+            padding: 12px 16px;
+            border-radius: 12px 12px 12px 4px;
+            display: inline-block;
+            max-width: 85%;
+            word-wrap: break-word;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        .assistant-message .message-content::before {
+            display: none;
+        }
+
+        .message-time {
+            font-size: 0.75em;
+            opacity: 0.6;
+            margin-top: 5px;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            outline: none;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+
+        #messageInput:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        #sendButton {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            margin-left: 10px;
+        }
+
+        #sendButton:hover {
+            background: #5a67d8;
+        }
+
+        #sendButton:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+        }
+
+        #sendButton:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: none;
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        .typing-indicator .message-content {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            padding: 15px 20px;
+            border-radius: 8px 25px 25px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid rgba(243, 156, 18, 0.2);
+        }
+
+        .typing-dots {
+            display: inline-block;
+        }
+
+        .typing-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quick-action-btn {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: #4a5568;
+            box-shadow: none;
+        }
+
+        .quick-action-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #bdc3c7;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #95a5a6;
+        }
+
+        /* Progress bar styles */
+        .progress-container {
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.8s ease-out;
+            animation: shimmer 2s ease-in-out infinite;
+            background-size: 200% 100%;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            50% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Audit result styles */
+        .audit-summary {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 15px 0;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        /* Table styles for audit results */
+        .audit-summary table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .audit-summary table td {
+            color: #4b5563;
+        }
+
+        .audit-summary table tr:hover {
+            background: #f9fafb;
+        }
+
+        /* Responsive design improvements */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .chat-header h1 {
+                font-size: 1.4em;
+            }
+            
+            .quick-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .quick-action-btn {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .user-message .message-content,
+            .assistant-message .message-content {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+                <div class="chat-header">
+            <h1>IAM SOX Compliance Assistant</h1>
+            <p>AI-powered compliance monitoring and audit system</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant-message">
+                <div class="message-content">
+                    <strong>Welcome to the IAM SOX Compliance Assistant!</strong><br><br>
+                    I'm powered by your trained Google T5-small model and can help you with:
+                    <br>• <strong>Running SailPoint compliance audits</strong>
+                    <br>• <strong>Analyzing identity and access events</strong>
+                    <br>• <strong>Detecting SOX violations</strong>
+                    <br>• <strong>IAM policy compliance</strong>
+                    <br>• <strong>Real-time SailPoint integration</strong>
+                    <br><br>
+                    <em>Try one of the quick actions below or type your question!</em>
+                </div>
+                <div class="message-time">System • Just now</div>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="message-content">
+                AI is analyzing... 
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="sendQuickMessage('run audit')">
+                    Run Audit
+                </button>
+                <button class="quick-action-btn" onclick="sendQuickMessage('sailpoint status')">
+                    SailPoint Status
+                </button>
+                <button class="quick-action-btn" onclick="sendQuickMessage('analyze event')">
+                    Analyze Event
+                </button>
+                <button class="quick-action-btn" onclick="sendQuickMessage('show history')">
+                    Show History
+                </button>
+                <button class="quick-action-btn" onclick="sendQuickMessage('help')">
+                    Help
+                </button>
+            </div>
+            
+            <div class="chat-input-wrapper">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Ask about compliance, run audits, or analyze events..."
+                    maxlength="500"
+                >
+                <button id="sendButton" onclick="sendMessage()">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Focus on input when page loads
+        window.onload = function() {
+            messageInput.focus();
+        };
+
+        // Handle Enter key press
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function sendQuickMessage(message) {
+            messageInput.value = message;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || sendButton.disabled) return;
+
+            // Check if this is an audit request
+            const isAuditRequest = message.toLowerCase().includes('audit') || 
+                                 message.toLowerCase().includes('run audit') ||
+                                 message.toLowerCase().includes('compliance check');
+
+            // Disable input and show typing
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+            
+            // Add user message
+            addMessage(message, 'user');
+            messageInput.value = '';
+            
+            let progressFill = null;
+            if (isAuditRequest) {
+                progressFill = addProgressBar('Running Compliance Audit');
+                await simulateAuditProgress(progressFill);
+            } else {
+                // Show typing indicator for non-audit messages
+                showTyping();
+            }
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                
+                if (isAuditRequest && progressFill) {
+                    updateProgress(progressFill, 100, 'Finalizing audit report...');
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } else {
+                    // Hide typing indicator for non-audit messages
+                    hideTyping();
+                }
+
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`, 'assistant', true);
+                } else {
+                    // Format audit results if this was an audit request
+                    const formattedResponse = isAuditRequest ? 
+                        formatAuditResults(data.response) : 
+                        data.response;
+                    
+                    addMessage(formattedResponse, 'assistant');
+                    
+                    if (isAuditRequest && progressFill) {
+                        updateProgress(progressFill, 100, 'Audit completed successfully!');
+                        // Hide progress bar after a delay
+                        setTimeout(() => {
+                            const progressContainer = progressFill.closest('.progress-container');
+                            if (progressContainer) {
+                                progressContainer.style.opacity = '0';
+                                setTimeout(() => {
+                                    progressContainer.remove();
+                                }, 500);
+                            }
+                        }, 2000);
+                    }
+                }
+
+            } catch (error) {
+                if (!isAuditRequest) {
+                    hideTyping();
+                }
+                addMessage('Network error. Please check your connection and try again.', 'assistant', true);
+                console.error('Error:', error);
+                
+                if (progressFill) {
+                    updateProgress(progressFill, 100, 'Error occurred during audit');
+                }
+            } finally {
+                // Re-enable input
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        function addMessage(content, sender = 'assistant', isError = false) {
+            const messageDiv = document.createElement('div');
+            
+            if (sender === 'user') {
+                messageDiv.className = 'message user-message';
+            } else {
+                messageDiv.className = 'message assistant-message';
+                if (isError) {
+                    messageDiv.style.border = '1px solid rgba(231, 76, 60, 0.3)';
+                    messageDiv.style.background = 'rgba(231, 76, 60, 0.05)';
+                }
+            }
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = content;
+            
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+            
+            // Auto-scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addProgressBar(taskName) {
+            const progressHtml = `
+                <div class="progress-container">
+                    <div style="font-weight: 600; color: #4a5568; margin-bottom: 8px;">
+                        ${taskName}
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%" id="progress-fill"></div>
+                    </div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;" id="progress-text">
+                        Initializing...
+                    </div>
+                </div>
+            `;
+            addMessage(progressHtml, false);
+            return document.getElementById('progress-fill');
+        }
+
+        function updateProgress(progressFill, percentage, text) {
+            if (progressFill) {
+                progressFill.style.width = percentage + '%';
+                const progressText = document.getElementById('progress-text');
+                if (progressText) {
+                    progressText.textContent = text;
+                }
+            }
+        }
+
+        async function simulateAuditProgress(progressFill) {
+            const steps = [
+                { percent: 5, text: 'Initializing audit engine...', delay: 300 },
+                { percent: 15, text: 'Connecting to SailPoint API...', delay: 800 },
+                { percent: 25, text: 'Authenticating with identity system...', delay: 600 },
+                { percent: 35, text: 'Fetching identity records...', delay: 1000 },
+                { percent: 45, text: 'Loading access permissions...', delay: 800 },
+                { percent: 55, text: 'Processing 100 identity records...', delay: 1200 },
+                { percent: 65, text: 'Analyzing role assignments...', delay: 900 },
+                { percent: 75, text: 'Checking segregation of duties...', delay: 1000 },
+                { percent: 85, text: 'Running AI compliance analysis...', delay: 1500 },
+                { percent: 95, text: 'Generating compliance report...', delay: 800 }
+            ];
+
+            for (const step of steps) {
+                updateProgress(progressFill, step.percent, step.text);
+                await new Promise(resolve => setTimeout(resolve, step.delay));
+            }
+        }
+
+        function formatAuditResults(results) {
+            if (typeof results === 'string') {
+                // Try to parse if it's a JSON string
+                try {
+                    results = JSON.parse(results);
+                } catch (e) {
+                    return results; // Return as-is if not JSON
+                }
+            }
+
+            if (results && typeof results === 'object') {
+                let html = '<div class="audit-summary">';
+                html += '<h3 style="color: #4a5568; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">Audit Results Summary</h3>';
+                
+                // Summary Statistics Table
+                html += '<div style="margin-bottom: 25px;">';
+                html += '<h4 style="color: #4a5568; margin-bottom: 15px;">Summary Statistics</h4>';
+                html += '<table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0;">';
+                html += '<thead style="background: #f7fafc;">';
+                html += '<tr><th style="padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Metric</th>';
+                html += '<th style="padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Count</th></tr>';
+                html += '</thead><tbody>';
+                
+                if (results.total_records) {
+                    html += `<tr><td style="padding: 10px; border-bottom: 1px solid #f1f5f9;">Total Records</td><td style="padding: 10px; text-align: right; border-bottom: 1px solid #f1f5f9; font-weight: 500;">${results.total_records}</td></tr>`;
+                }
+                if (results.violations !== undefined) {
+                    html += `<tr><td style="padding: 10px; border-bottom: 1px solid #f1f5f9; color: #dc2626;">Violations Found</td><td style="padding: 10px; text-align: right; border-bottom: 1px solid #f1f5f9; font-weight: 500; color: #dc2626;">${results.violations}</td></tr>`;
+                }
+                if (results.compliant !== undefined) {
+                    html += `<tr><td style="padding: 10px; border-bottom: 1px solid #f1f5f9; color: #059669;">Compliant Records</td><td style="padding: 10px; text-align: right; border-bottom: 1px solid #f1f5f9; font-weight: 500; color: #059669;">${results.compliant}</td></tr>`;
+                }
+                
+                const riskScore = results.violations && results.total_records ? 
+                    Math.round((results.violations / results.total_records) * 100) : 0;
+                html += `<tr style="background: #f8fafc;"><td style="padding: 10px; font-weight: 600;">Risk Score</td><td style="padding: 10px; text-align: right; font-weight: 600; color: ${riskScore > 20 ? '#dc2626' : riskScore > 10 ? '#ea580c' : '#059669'};">${riskScore}%</td></tr>`;
+                
+                html += '</tbody></table>';
+                html += '</div>';
+                
+                // Detailed Results Table
+                if (results.detailed_results && Array.isArray(results.detailed_results)) {
+                    html += '<div style="margin-top: 25px;">';
+                    html += '<h4 style="color: #4a5568; margin-bottom: 15px;">Detailed Analysis</h4>';
+                    html += '<table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0;">';
+                    html += '<thead style="background: #f7fafc;">';
+                    html += '<tr><th style="padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-weight: 600;">#</th>';
+                    html += '<th style="padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Status</th>';
+                    html += '<th style="padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Description</th></tr>';
+                    html += '</thead><tbody>';
+                    
+                    results.detailed_results.slice(0, 10).forEach((result, index) => {
+                        const isViolation = result.includes('VIOLATION') || result.includes('violation');
+                        const status = isViolation ? 'VIOLATION' : 'COMPLIANT';
+                        const statusColor = isViolation ? '#dc2626' : '#059669';
+                        const bgColor = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+                        
+                        html += `<tr style="background: ${bgColor};">`;
+                        html += `<td style="padding: 10px; border-bottom: 1px solid #f1f5f9; font-weight: 500;">${index + 1}</td>`;
+                        html += `<td style="padding: 10px; border-bottom: 1px solid #f1f5f9; color: ${statusColor}; font-weight: 600;">${status}</td>`;
+                        html += `<td style="padding: 10px; border-bottom: 1px solid #f1f5f9;">${result}</td>`;
+                        html += '</tr>';
+                    });
+                    
+                    if (results.detailed_results.length > 10) {
+                        html += `<tr><td colspan="3" style="padding: 12px; text-align: center; background: #f7fafc; color: #6b7280; font-style: italic;">... and ${results.detailed_results.length - 10} more results</td></tr>`;
+                    }
+                    
+                    html += '</tbody></table>';
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+                
+                return html;
+            }
+            
+            return results;
+        }
+
+        function formatMessage(content) {
+            // Convert markdown-like formatting to HTML
+            return content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')              // Italic
+                .replace(/`(.*?)`/g, '<code>$1</code>')            // Code
+                .replace(/\n/g, '<br>')                            // Line breaks
+                .replace(/•/g, '&bull;')                           // Bullet points
+                .replace(/COMPLIANT/g, '<span style="color: #2ecc71;">COMPLIANT</span>')
+                .replace(/NON-COMPLIANT/g, '<span style="color: #e74c3c;">NON-COMPLIANT</span>')
+                .replace(/VIOLATION/g, '<span style="color: #f39c12;">VIOLATION</span>');
+        }
+
+        function showTyping() {
+            typingIndicator.style.display = 'block';
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            typingIndicator.style.display = 'none';
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Add some sample interactions for demo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Optional: Add a subtle entrance animation
+            const container = document.querySelector('.chat-container');
+            container.style.opacity = '0';
+            container.style.transform = 'scale(0.9)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.5s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'scale(1)';
+            }, 100);
+        });
+
+        // Auto-resize chat messages area
+        function adjustChatHeight() {
+            const container = document.querySelector('.chat-container');
+            const header = document.querySelector('.chat-header');
+            const input = document.querySelector('.chat-input-container');
+            const messages = document.querySelector('.chat-messages');
+            
+            const availableHeight = container.offsetHeight - header.offsetHeight - input.offsetHeight;
+            messages.style.height = availableHeight + 'px';
+        }
+
+        // Call on load and resize
+        window.addEventListener('load', adjustChatHeight);
+        window.addEventListener('resize', adjustChatHeight);
+    </script>
+</body>
+</html>
